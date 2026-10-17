@@ -6,7 +6,7 @@ from app.core.config import GENERATED_DIR, TEMPLATE_PATH
 from app.schemas.application import GenerateRequest, ParseRequest
 from app.services.excel_writer import inspect_workbook, write_application
 from app.services.parser import parse_text
-from app.services.validators import validate_application
+from app.services.validators import normalize_application, validate_application
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/web/templates")
@@ -32,7 +32,11 @@ async def review(request: Request):
 @router.post("/api/generate")
 async def generate(request: GenerateRequest):
     try:
-        output = write_application(TEMPLATE_PATH, GENERATED_DIR, request.data)
+        data = normalize_application(request.data)
+        issues = validate_application(data)
+        if issues:
+            raise HTTPException(status_code=422, detail=issues)
+        output = write_application(TEMPLATE_PATH, GENERATED_DIR, data)
     except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"filename": output.name, "download_url": f"/api/download/{output.name}"}

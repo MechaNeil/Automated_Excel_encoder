@@ -2,8 +2,18 @@ import re
 
 from app.schemas.application import ApplicationData, ParseResponse, Person
 from app.services.field_map import FIELD_ALIASES
+from app.services.validators import correct_value_format
 
-SECTION_MARKERS = {"applicant details": "applicant", "spouse or co maker": "spouse", "spouse/co maker": "spouse"}
+SECTION_MARKERS = {
+    "applicant details": "applicant",
+    "borrower primary": "applicant",
+    "borrowerprimary": "applicant",
+    "spouse or co maker": "spouse",
+    "spouse/co maker": "spouse",
+    "coborrower comaker": "spouse",
+    "coborrowercomaker": "spouse",
+    "co borrower co maker": "spouse",
+}
 
 
 def _clean(value: str) -> str:
@@ -36,21 +46,28 @@ def parse_text(raw_text: str) -> ParseResponse:
             current = SECTION_MARKERS[marker]
             current_field = None
             continue
-        match = re.match(r"^\s*([^:]{2,60})\s*:\s*(.*)$", line)
+        match = re.match(r"^\s*([^:#]{2,60}?)\s*(?::|#)\s*(.*)$", line)
         if not match:
             if current_field:
                 target = application if current == "application" else people[current]
-                target[current_field] = _clean(f"{target.get(current_field, '')} {line}")
+                target[current_field] = correct_value_format(
+                    current_field,
+                    _clean(f"{target.get(current_field, '')} {line}"),
+                )
             continue
         field = _canonical(match.group(1))
         value = _clean(match.group(2))
-        if not field or not value:
+        if not field:
+            warnings.append(f"Unrecognized field label: {match.group(1).strip()}.")
+            current_field = None
+            continue
+        if not value:
             continue
         target = application if field in {"unit", "color_first", "color_second"} else people[current]
         current = "application" if field in {"unit", "color_first", "color_second"} else current
         if target.get(field) and target[field] != value:
             conflicts.append(f"Conflicting values for {current}.{field}: {target[field]!r} and {value!r}")
-        target[field] = value
+        target[field] = correct_value_format(field, value)
         source_values[f"{current}.{field}"] = value
         current_field = field
 

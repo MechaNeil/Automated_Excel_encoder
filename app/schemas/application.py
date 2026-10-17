@@ -8,6 +8,7 @@ class Person(BaseModel):
     first_name: str = ""
     middle_name: str = ""
     birthday: str = ""
+    citizenship: str = ""
     birth_place: str = ""
     age: str = ""
     address: str = ""
@@ -16,6 +17,8 @@ class Person(BaseModel):
     civil_status: str = ""
     email: str = ""
     contact_no: str = ""
+    home_tel: str = ""
+    relationship: str = ""
     main_bank: str = ""
     bank_branch: str = ""
     employment_name: str = ""
@@ -25,6 +28,7 @@ class Person(BaseModel):
     years_of_service: str = ""
     monthly_income: str = ""
     employment_email: str = ""
+    bank_depositor: str = ""
     tin_number: str = ""
 
 
