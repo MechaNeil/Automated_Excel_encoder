@@ -8,6 +8,10 @@ Place the original workbook at `excel_templates/CREDIT APPLICATION - Sample.xlsx
 
 Open http://localhost:8000. Generated files are written to `generated/`.
 
+## Excel encoding architecture
+
+The API depends on the `ExcelEncoder` port in `app/services/excel_encoder.py`. The default adapter, `OpenPyXLTemplateEncoder`, loads the supplied workbook template, resolves labels through `TemplateFieldLocator`, and saves a generated copy. `openpyxl` is intentional here because the application edits an existing `.xlsx` template and must retain merged-cell destinations. A future encoder can implement the same port without changing the API layer.
+
 ## Test
 
 Install dependencies with `python -m pip install -r requirements.txt`, then run `pytest -q`.

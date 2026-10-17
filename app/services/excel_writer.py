@@ -6,6 +6,7 @@ from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 
 from app.schemas.application import ApplicationData
+from app.services.excel_encoder import ExcelEncoder, OpenPyXLTemplateEncoder, inspect_workbook
 from app.services.field_map import FIELD_ALIASES
 
 
@@ -111,30 +112,10 @@ def _find_destination(sheet, field: str, section: str | None = None):
     return None
 
 
-def write_application(template_path: Path, output_dir: Path, data: ApplicationData) -> Path:
-    if not template_path.exists():
-        raise FileNotFoundError(f"Excel template not found: {template_path}")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    workbook = load_workbook(template_path)
-    values = {"unit": data.unit, "color_first": data.color_first, "color_second": data.color_second}
-    for prefix, person in (("applicant", data.applicant), ("spouse", data.spouse)):
-        values.update({f"{prefix}.{name}": value for name, value in person.model_dump().items() if name in FIELD_ALIASES})
-    written = 0
-    for key, value in values.items():
-        field = key.split(".")[-1]
-        if not value or field not in FIELD_ALIASES:
-            continue
-        for sheet in workbook.worksheets:
-            section = key.split(".")[0] if "." in key else None
-            destination = _explicit_destination(sheet, field, section)
-            if destination is None:
-                destination = _find_destination(sheet, field, section)
-            if destination:
-                destination.value = value
-                written += 1
-                break
-    if not written:
-        raise ValueError("No recognized template labels were found; refusing to generate an unmapped workbook.")
-    output = output_dir / f"credit_application_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    workbook.save(output)
-    return output
+def write_application(
+    template_path: Path,
+    output_dir: Path,
+    data: ApplicationData,
+    encoder: ExcelEncoder | None = None,
+) -> Path:
+    return (encoder or OpenPyXLTemplateEncoder()).encode(template_path, output_dir, data)
