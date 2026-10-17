@@ -6,10 +6,18 @@ from app.services.validators import correct_value_format
 
 SECTION_MARKERS = {
     "applicant details": "applicant",
+    "borrower details": "applicant",
+    "application details": "applicant",
+    "principal borrower": "applicant",
+    "principalborrower": "applicant",
     "borrower primary": "applicant",
     "borrowerprimary": "applicant",
     "spouse or co maker": "spouse",
     "spouse/co maker": "spouse",
+    "spouse or co maker details": "spouse",
+    "comaker": "spouse",
+    "comaker details": "spouse",
+    "co maker": "spouse",
     "coborrower comaker": "spouse",
     "coborrowercomaker": "spouse",
     "co borrower co maker": "spouse",
@@ -58,7 +66,9 @@ def parse_text(raw_text: str) -> ParseResponse:
         field = _canonical(match.group(1))
         value = _clean(match.group(2))
         if not field:
-            warnings.append(f"Unrecognized field label: {match.group(1).strip()}.")
+            normalized_label = re.sub(r"[^a-z0-9]+", " ", match.group(1).lower()).split()
+            if "application" not in normalized_label:
+                warnings.append(f"Unrecognized field label: {match.group(1).strip()}.")
             current_field = None
             continue
         if not value:

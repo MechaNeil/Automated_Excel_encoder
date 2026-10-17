@@ -20,6 +20,7 @@ async def index(request: Request):
 @router.post("/api/parse")
 async def parse(request: ParseRequest):
     response = parse_text(request.raw_text)
+    response.data = normalize_application(response.data)
     response.warnings.extend(validate_application(response.data))
     return response
 
@@ -34,7 +35,7 @@ async def generate(request: GenerateRequest):
     try:
         data = normalize_application(request.data)
         issues = validate_application(data)
-        if issues:
+        if issues and not request.accept_errors:
             raise HTTPException(status_code=422, detail=issues)
         output = write_application(TEMPLATE_PATH, GENERATED_DIR, data)
     except (FileNotFoundError, ValueError) as exc:
