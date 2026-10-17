@@ -41,3 +41,27 @@ def test_writer_skips_occupied_adjacent_label(tmp_path):
     output = write_application(template, tmp_path / "generated", ApplicationData(unit="Model X"))
 
     assert load_workbook(output).active["B2"].value == "Model X"
+
+
+def test_writer_filters_words_and_separates_borrower_sections(tmp_path):
+    template = tmp_path / "template.xlsx"
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "PRINCIPAL BORROWER"
+    sheet["B1"] = "NAME OF EMPLOYER/BUSINESS"
+    sheet["A5"] = "CO-MAKER"
+    sheet["B5"] = "EMPLOYER/BUSINESS NAME"
+    workbook.save(template)
+
+    output = write_application(
+        template,
+        tmp_path / "generated",
+        ApplicationData(
+            applicant=Person(employment_name="Primary Employer"),
+            spouse=Person(employment_name="Co-maker Employer"),
+        ),
+    )
+
+    sheet = load_workbook(output).active
+    assert sheet["C1"].value == "Primary Employer"
+    assert sheet["C5"].value == "Co-maker Employer"

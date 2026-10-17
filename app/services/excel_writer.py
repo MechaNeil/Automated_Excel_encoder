@@ -26,23 +26,59 @@ def _label_key(value: object) -> str:
     return re.sub(r"[^a-z0-9]+", " ", str(value).lower()).strip()
 
 
-def _find_destination(sheet, field: str):
-    aliases = {_label_key(alias) for alias in FIELD_ALIASES[field]}
+def _label_tokens(value: object) -> set[str]:
+    tokens = set(_label_key(value).split())
+    tokens.discard("of")
+    if "employment" in tokens:
+        tokens.remove("employment")
+        tokens.add("employer")
+    return tokens
+
+
+def _section_rows(sheet, section: str) -> tuple[int, int] | None:
+    markers = {"applicant": "principal borrower", "spouse": "co maker"}
+    marker_rows = {
+        marker: cell.row
+        for row in sheet.iter_rows()
+        for cell in row
+        if (marker := _label_key(cell.value)) in markers.values()
+    }
+    if len(marker_rows) < 2:
+        return None
+    principal_row = marker_rows["principal borrower"]
+    comaker_row = marker_rows["co maker"]
+    return (principal_row, comaker_row - 1) if section == "applicant" else (comaker_row, sheet.max_row)
+
+
+def _label_matches(value: object, field: str) -> bool:
+    label_tokens = _label_tokens(value)
+    return any(
+        _label_key(alias) == _label_key(value)
+        or _label_tokens(alias).issubset(label_tokens)
+        for alias in FIELD_ALIASES[field]
+    )
+
+
+def _find_destination(sheet, field: str, section: str | None = None):
+    row_bounds = _section_rows(sheet, section) if section else None
     for row in sheet.iter_rows():
         for cell in row:
-            if _label_key(cell.value) in aliases:
+            if row_bounds and not row_bounds[0] <= cell.row <= row_bounds[1]:
+                continue
+            if _label_matches(cell.value, field):
                 destination = sheet.cell(cell.row, cell.column + 1)
                 if isinstance(destination, MergedCell):
                     for merged_range in sheet.merged_cells.ranges:
                         if destination.coordinate in merged_range:
                             destination = sheet.cell(merged_range.min_row, merged_range.min_col)
                             break
-                if destination.value:
+                if not destination.value and not isinstance(destination, MergedCell):
+                    return destination
+                if destination.value and _label_matches(destination.value, field):
                     for row_number in range(destination.row + 1, sheet.max_row + 1):
                         candidate = sheet.cell(row_number, destination.column)
                         if not isinstance(candidate, MergedCell) and not candidate.value:
                             return candidate
-                return destination
     return None
 
 
@@ -60,8 +96,8 @@ def write_application(template_path: Path, output_dir: Path, data: ApplicationDa
         if not value or field not in FIELD_ALIASES:
             continue
         for sheet in workbook.worksheets:
-            destination = _find_destination(sheet, field)
-            if destination and not destination.value:
+            destination = _find_destination(sheet, field, key.split(".")[0] if "." in key else None)
+            if destination:
                 destination.value = value
                 written += 1
                 break
