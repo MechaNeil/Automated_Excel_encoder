@@ -27,6 +27,12 @@ def correct_value_format(field: str, value: str) -> str:
         return value.lower()
     if field in DATE_FIELDS:
         date_value = re.sub(r"(\d)(st|nd|rd|th)\b", r"\1", value, flags=re.IGNORECASE)
+        date_value = re.sub(
+            r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.",
+            r"\1",
+            date_value,
+            flags=re.IGNORECASE,
+        )
         for date_format in (
             "%m/%d/%Y", "%m-%d-%Y", "%m/%d/%y", "%m-%d-%y",
             "%B %d, %Y", "%b %d, %Y", "%B %d %Y", "%b %d %Y",

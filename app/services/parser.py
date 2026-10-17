@@ -6,10 +6,18 @@ from app.services.validators import correct_value_format
 
 SECTION_MARKERS = {
     "applicant details": "applicant",
+    "borrower details": "applicant",
+    "application details": "applicant",
+    "principal borrower": "applicant",
+    "principalborrower": "applicant",
     "borrower primary": "applicant",
     "borrowerprimary": "applicant",
     "spouse or co maker": "spouse",
     "spouse/co maker": "spouse",
+    "spouse or co maker details": "spouse",
+    "comaker": "spouse",
+    "comaker details": "spouse",
+    "co maker": "spouse",
     "coborrower comaker": "spouse",
     "coborrowercomaker": "spouse",
     "co borrower co maker": "spouse",
