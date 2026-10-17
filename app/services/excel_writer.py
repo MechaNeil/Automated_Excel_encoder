@@ -9,6 +9,12 @@ from app.schemas.application import ApplicationData
 from app.services.field_map import FIELD_ALIASES
 
 
+EXPLICIT_DESTINATIONS = {
+    "applicant": {"age": "K8"},
+    "spouse": {"age": "K22"},
+}
+
+
 def inspect_workbook(path: Path) -> dict:
     if not path.exists():
         return {"exists": False, "path": str(path)}
@@ -57,6 +63,16 @@ def _label_matches(value: object, field: str) -> bool:
         or _label_tokens(alias).issubset(label_tokens)
         for alias in FIELD_ALIASES[field]
     )
+
+
+def _explicit_destination(sheet, field: str, section: str | None = None):
+    coordinate = EXPLICIT_DESTINATIONS.get(section or "", {}).get(field)
+    if not coordinate:
+        return None
+    for merged_range in sheet.merged_cells.ranges:
+        if coordinate == merged_range.start_cell.coordinate:
+            return sheet[coordinate]
+    return None
 
 
 def _find_destination(sheet, field: str, section: str | None = None):
@@ -109,7 +125,10 @@ def write_application(template_path: Path, output_dir: Path, data: ApplicationDa
         if not value or field not in FIELD_ALIASES:
             continue
         for sheet in workbook.worksheets:
-            destination = _find_destination(sheet, field, key.split(".")[0] if "." in key else None)
+            section = key.split(".")[0] if "." in key else None
+            destination = _explicit_destination(sheet, field, section)
+            if destination is None:
+                destination = _find_destination(sheet, field, section)
             if destination:
                 destination.value = value
                 written += 1
