@@ -1,0 +1,11 @@
+services:
+  credit-encoder:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./generated:/app/generated
+      - ./excel_templates:/app/excel_templates:ro
+    environment:
+      GENERATED_DIR: /app/generated
+      TEMPLATE_PATH: /app/excel_templates/CREDIT APPLICATION -  Sample.xlsx
