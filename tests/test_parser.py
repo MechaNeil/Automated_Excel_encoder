@@ -48,6 +48,11 @@ def test_parser_reports_unknown_field_labels():
     assert any("Unrecognized field label" in warning for warning in result.warnings)
 
 
+def test_parser_accepts_application_title_labels():
+    result = parse_text("APPLICATION FORM: online application")
+    assert not any("Unrecognized field label" in warning for warning in result.warnings)
+
+
 def test_parser_handles_hash_labels_and_raw_client_field_variants():
     result = parse_text("""BORROWER/PRIMARY
 CITIZENSHIP: Filipino

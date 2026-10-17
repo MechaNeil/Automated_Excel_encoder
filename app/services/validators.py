@@ -12,7 +12,6 @@ UPPERCASE_FIELDS = {
     "position", "employment_address", "monthly_income", "bank_depositor", "relationship",
 }
 VALID_HOUSING_STATUSES = {"OWNED", "RENTED", "LIVING W/PARENTS", "LIVING WITH PARENTS"}
-VALID_CIVIL_STATUSES = {"SINGLE", "MARRIED", "WIDOWED", "SEPARATED", "DIVORCED"}
 
 
 def _is_not_applicable(value: str) -> bool:
@@ -27,9 +26,14 @@ def correct_value_format(field: str, value: str) -> str:
     if field in EMAIL_FIELDS:
         return value.lower()
     if field in DATE_FIELDS:
-        for date_format in ("%m/%d/%Y", "%m-%d-%Y", "%m/%d/%y", "%m-%d-%y"):
+        date_value = re.sub(r"(\d)(st|nd|rd|th)\b", r"\1", value, flags=re.IGNORECASE)
+        for date_format in (
+            "%m/%d/%Y", "%m-%d-%Y", "%m/%d/%y", "%m-%d-%y",
+            "%B %d, %Y", "%b %d, %Y", "%B %d %Y", "%b %d %Y",
+            "%d %B %Y", "%d %b %Y", "%Y-%m-%d",
+        ):
             try:
-                return datetime.strptime(value, date_format).strftime("%m/%d/%Y")
+                return datetime.strptime(date_value, date_format).strftime("%m/%d/%Y")
             except ValueError:
                 continue
     if field == "tin_number":
@@ -58,6 +62,8 @@ def normalize_application(data: ApplicationData) -> ApplicationData:
     values.update({field: correct_value_format(field, values[field]) for field in ("unit", "color_first", "color_second")})
     values["applicant"] = normalize_person(data.applicant)
     values["spouse"] = normalize_person(data.spouse)
+    if not values["spouse"].housing_status:
+        values["spouse"].housing_status = "N/A"
     return ApplicationData(**values)
 
 
@@ -65,24 +71,11 @@ def validate_application(data: ApplicationData) -> list[str]:
     data = normalize_application(data)
     issues: list[str] = []
     for label, person in (("Applicant", data.applicant), ("Spouse/co-maker", data.spouse)):
-        if person.email and not _is_not_applicable(person.email) and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", person.email):
-            issues.append(f"{label} email address is not valid.")
-        if person.employment_email and not _is_not_applicable(person.employment_email) and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", person.employment_email):
-            issues.append(f"{label} employment email address is not valid.")
         if person.birthday and not _is_not_applicable(person.birthday):
             try:
                 datetime.strptime(person.birthday, "%m/%d/%Y")
             except ValueError:
                 issues.append(f"{label} birthdate must use MM/DD/YYYY and be a real date.")
-        if person.age and (not person.age.isdigit() or not 0 < int(person.age) < 120):
-            issues.append(f"{label} age should be a number between 1 and 119.")
-        if person.tin_number and not _is_not_applicable(person.tin_number) and not re.fullmatch(r"\d{3}-\d{3}-\d{3}", person.tin_number):
-            issues.append(f"{label} TIN must contain 9 digits in XXX-XXX-XXX format.")
-        if person.housing_status and person.housing_status not in VALID_HOUSING_STATUSES:
+        if person.housing_status and not _is_not_applicable(person.housing_status) and person.housing_status not in VALID_HOUSING_STATUSES:
             issues.append(f"{label} housing status is not recognized.")
-        if person.civil_status and person.civil_status not in VALID_CIVIL_STATUSES:
-            issues.append(f"{label} marital status is not recognized.")
-        for field, value in (("cell phone", person.contact_no), ("home telephone", person.home_tel), ("employment telephone", person.employment_contact_no)):
-            if value and not _is_not_applicable(value) and not re.fullmatch(r"[TLMt lm+()\d./-]{7,}", value):
-                issues.append(f"{label} {field} contains unexpected characters.")
     return issues

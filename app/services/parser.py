@@ -58,7 +58,9 @@ def parse_text(raw_text: str) -> ParseResponse:
         field = _canonical(match.group(1))
         value = _clean(match.group(2))
         if not field:
-            warnings.append(f"Unrecognized field label: {match.group(1).strip()}.")
+            normalized_label = re.sub(r"[^a-z0-9]+", " ", match.group(1).lower()).split()
+            if "application" not in normalized_label:
+                warnings.append(f"Unrecognized field label: {match.group(1).strip()}.")
             current_field = None
             continue
         if not value:

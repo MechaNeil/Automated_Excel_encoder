@@ -55,3 +55,4 @@ class ParseResponse(BaseModel):
 
 class GenerateRequest(BaseModel):
     data: ApplicationData
+    accept_errors: bool = False
