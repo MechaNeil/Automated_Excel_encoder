@@ -46,3 +46,22 @@ OFC TEL: 09662587381""")
 def test_parser_reports_unknown_field_labels():
     result = parse_text("NOT A REAL FIELD: value")
     assert any("Unrecognized field label" in warning for warning in result.warnings)
+
+
+def test_parser_handles_hash_labels_and_raw_client_field_variants():
+    result = parse_text("""BORROWER/PRIMARY
+CITIZENSHIP: Filipino
+Cell # 09690100549
+Tin # 242 905 879
+Year of stay: 8yrs
+Employer/Business name: BIPO Service Philippines Inc.
+Employer/Business address: 10F Rockwell
+COBORROWER/COMAKER
+Employer/Business name: Great Vission Academy""")
+
+    assert result.data.applicant.citizenship == "FILIPINO"
+    assert result.data.applicant.contact_no == "0969 010 0549"
+    assert result.data.applicant.tin_number == "242-905-879"
+    assert result.data.applicant.length_of_stay == "8YRS"
+    assert result.data.applicant.employment_name == "BIPO SERVICE PHILIPPINES INC."
+    assert result.data.spouse.employment_name == "GREAT VISSION ACADEMY"

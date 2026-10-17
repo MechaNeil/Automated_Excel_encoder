@@ -46,7 +46,7 @@ def parse_text(raw_text: str) -> ParseResponse:
             current = SECTION_MARKERS[marker]
             current_field = None
             continue
-        match = re.match(r"^\s*([^:]{2,60})\s*:\s*(.*)$", line)
+        match = re.match(r"^\s*([^:#]{2,60}?)\s*(?::|#)\s*(.*)$", line)
         if not match:
             if current_field:
                 target = application if current == "application" else people[current]

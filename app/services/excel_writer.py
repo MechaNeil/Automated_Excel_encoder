@@ -61,6 +61,16 @@ def _label_matches(value: object, field: str) -> bool:
 
 def _find_destination(sheet, field: str, section: str | None = None):
     row_bounds = _section_rows(sheet, section) if section else None
+    if field == "monthly_income" and section:
+        income_row = {"applicant": 35, "spouse": 36}[section]
+        for cell in sheet[income_row]:
+            if _label_matches(cell.value, field):
+                for merged_range in sheet.merged_cells.ranges:
+                    if cell.coordinate in merged_range:
+                        destination = sheet.cell(merged_range.min_row, merged_range.max_col + 1)
+                        if not isinstance(destination, MergedCell):
+                            return destination
+                return sheet.cell(cell.row, cell.column + 1)
     for row in sheet.iter_rows():
         for cell in row:
             if row_bounds and not row_bounds[0] <= cell.row <= row_bounds[1]:
@@ -70,7 +80,10 @@ def _find_destination(sheet, field: str, section: str | None = None):
                 if isinstance(destination, MergedCell):
                     for merged_range in sheet.merged_cells.ranges:
                         if destination.coordinate in merged_range:
-                            destination = sheet.cell(merged_range.min_row, merged_range.min_col)
+                            if merged_range.min_col == cell.column:
+                                destination = sheet.cell(merged_range.max_row + 1, merged_range.min_col)
+                            else:
+                                destination = sheet.cell(merged_range.min_row, merged_range.min_col)
                             break
                 if not destination.value and not isinstance(destination, MergedCell):
                     return destination
