@@ -30,30 +30,30 @@ Credit Application Encoder is a Dockerized FastAPI application that turns semi-s
 
 ![Component Relationships](diagrams/component-relationships.drawio.png)
 
-| Component | Responsibility | Location |
-|---|---|---|
-| FastAPI application | Static files, templates, and route registration | `app/main.py` |
-| Route layer | Browser pages and parse/generate/download/health endpoints | `app/api/routes.py` |
-| Domain schema | Pydantic request, response, and application models | `app/schemas/application.py` |
-| Parser | Section-aware text extraction and alias resolution | `app/services/parser.py` |
-| Field map | Canonical fields and accepted labels | `app/services/field_map.py` |
-| Validators | Normalization and validation rules | `app/services/validators.py` |
-| Encoder port | Replaceable workbook-writing contract | `app/services/excel_encoder.py` |
-| Template locator | Label matching and writable-cell resolution | `app/services/excel_encoder.py` |
-| OOXML preservation | Restores drawings, media, relationships, and worksheet object references | `app/services/floating_objects.py` |
+| Component           | Responsibility                                                           | Location                           |
+| ------------------- | ------------------------------------------------------------------------ | ---------------------------------- |
+| FastAPI application | Static files, templates, and route registration                          | `app/main.py`                      |
+| Route layer         | Browser pages and parse/generate/download/health endpoints               | `app/api/routes.py`                |
+| Domain schema       | Pydantic request, response, and application models                       | `app/schemas/application.py`       |
+| Parser              | Section-aware text extraction and alias resolution                       | `app/services/parser.py`           |
+| Field map           | Canonical fields and accepted labels                                     | `app/services/field_map.py`        |
+| Validators          | Normalization and validation rules                                       | `app/services/validators.py`       |
+| Encoder port        | Replaceable workbook-writing contract                                    | `app/services/excel_encoder.py`    |
+| Template locator    | Label matching and writable-cell resolution                              | `app/services/excel_encoder.py`    |
+| OOXML preservation  | Restores drawings, media, relationships, and worksheet object references | `app/services/floating_objects.py` |
 
 The `ExcelEncoder` protocol is the primary extension point. New label variants belong in `FIELD_ALIASES`; normalization rules belong in `correct_value_format`; workbook placement rules belong in `TemplateFieldLocator`.
 
 # 5. API Contracts and Message Schemas
 
-| Method | Path | Input | Output / behavior |
-|---|---|---|---|
-| GET | `/` | Browser request | HTML entry page and template availability flag |
-| POST | `/api/parse` | `{ "raw_text": string }` | `ParseResponse` with data, warnings, conflicts, and source values |
-| GET | `/review` | Browser request | HTML review page |
-| POST | `/api/generate` | `ApplicationData` plus `accept_errors` | Filename and download URL; 422 for validation issues unless accepted |
-| GET | `/api/download/{filename}` | Generated filename | Excel file; 404 if missing or outside generated storage |
-| GET | `/health` | None | Status and inspected workbook metadata |
+| Method | Path                       | Input                                  | Output / behavior                                                    |
+| ------ | -------------------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| GET    | `/`                        | Browser request                        | HTML entry page and template availability flag                       |
+| POST   | `/api/parse`               | `{ "raw_text": string }`               | `ParseResponse` with data, warnings, conflicts, and source values    |
+| GET    | `/review`                  | Browser request                        | HTML review page                                                     |
+| POST   | `/api/generate`            | `ApplicationData` plus `accept_errors` | Filename and download URL; 422 for validation issues unless accepted |
+| GET    | `/api/download/{filename}` | Generated filename                     | Excel file; 404 if missing or outside generated storage              |
+| GET    | `/health`                  | None                                   | Status and inspected workbook metadata                               |
 
 `ApplicationData` contains `unit`, two preferred colors, and `applicant` and `spouse` `Person` objects. `Person` stores identity, contact, residence, employment, banking, and TIN fields. Both models allow extra fields for forward compatibility.
 
@@ -77,26 +77,26 @@ The writer must not silently produce an unmapped workbook; it raises when no rec
 
 # 9. Dependencies
 
-| Category | Packages |
-|---|---|
-| Web API | `fastapi==0.115.6`, `uvicorn==0.34.0` |
-| Templates / forms | `jinja2==3.1.5`, `python-multipart==0.0.20` |
-| Workbook processing | `openpyxl==3.1.5`, `Pillow==11.1.0` |
-| Testing | `pytest==8.3.4`, `httpx==0.28.1` |
+| Category            | Packages                                    |
+| ------------------- | ------------------------------------------- |
+| Web API             | `fastapi==0.115.6`, `uvicorn==0.34.0`       |
+| Templates / forms   | `jinja2==3.1.5`, `python-multipart==0.0.20` |
+| Workbook processing | `openpyxl==3.1.5`, `Pillow==11.1.0`         |
+| Testing             | `pytest==8.3.4`, `httpx==0.28.1`            |
 
 # 10. Code Structure
 
-| Path | Purpose |
-|---|---|
-| `app/main.py` | FastAPI application setup |
-| `app/api/routes.py` | HTTP and HTML endpoints |
-| `app/core/config.py` | Environment-backed paths |
-| `app/schemas/application.py` | Pydantic contracts |
-| `app/services/` | Parser, validators, field map, Excel writer, encoder, and OOXML preservation |
-| `app/web/` | Templates and static browser assets |
-| `tests/` | Parser, validator, and Excel output tests |
-| `excel_templates/` | Source workbook mount |
-| `generated/` | Generated workbook output |
+| Path                         | Purpose                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `app/main.py`                | FastAPI application setup                                                    |
+| `app/api/routes.py`          | HTTP and HTML endpoints                                                      |
+| `app/core/config.py`         | Environment-backed paths                                                     |
+| `app/schemas/application.py` | Pydantic contracts                                                           |
+| `app/services/`              | Parser, validators, field map, Excel writer, encoder, and OOXML preservation |
+| `app/web/`                   | Templates and static browser assets                                          |
+| `tests/`                     | Parser, validator, and Excel output tests                                    |
+| `excel_templates/`           | Source workbook mount                                                        |
+| `generated/`                 | Generated workbook output                                                    |
 
 ## Verification Notes
 
