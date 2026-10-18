@@ -8,6 +8,7 @@ from openpyxl.cell.cell import MergedCell
 
 from app.schemas.application import ApplicationData
 from app.services.field_map import FIELD_ALIASES
+from app.services.floating_objects import FloatingObjectPreserver
 
 
 EXPLICIT_DESTINATIONS = {
@@ -129,8 +130,13 @@ class TemplateFieldLocator:
 class OpenPyXLTemplateEncoder:
     """Encode data by mutating a copy of an existing workbook template."""
 
-    def __init__(self, locator: TemplateFieldLocator | None = None):
+    def __init__(
+        self,
+        locator: TemplateFieldLocator | None = None,
+        floating_object_preserver: FloatingObjectPreserver | None = None,
+    ):
         self.locator = locator or TemplateFieldLocator()
+        self.floating_object_preserver = floating_object_preserver or FloatingObjectPreserver()
 
     def encode(self, template_path: Path, output_dir: Path, data: ApplicationData) -> Path:
         if not template_path.exists():
@@ -142,6 +148,7 @@ class OpenPyXLTemplateEncoder:
             raise ValueError("No recognized template labels were found; refusing to generate an unmapped workbook.")
         output = output_dir / f"credit_application_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         workbook.save(output)
+        self.floating_object_preserver.preserve(template_path, output)
         return output
 
     @staticmethod

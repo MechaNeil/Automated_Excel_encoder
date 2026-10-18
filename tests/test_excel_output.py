@@ -1,3 +1,5 @@
+from zipfile import ZipFile
+
 from openpyxl import Workbook, load_workbook
 
 from app.schemas.application import ApplicationData, Person
@@ -14,6 +16,36 @@ def test_writer_preserves_template_and_writes_adjacent_label(tmp_path):
     output = write_application(template, tmp_path / "generated", ApplicationData(unit="Model X", applicant=Person(first_name="Jane")))
     assert inspect_workbook(template)["sheets"] == ["Sheet"]
     assert load_workbook(output).active["B1"].value == "existing"
+
+
+def test_writer_preserves_template_floating_objects(tmp_path):
+    template = tmp_path / "template.xlsx"
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1"] = "UNIT"
+    workbook.save(template)
+    with ZipFile(template, "r") as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+    entries["xl/drawings/drawing1.xml"] = b'<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" />'
+    entries["xl/drawings/_rels/drawing1.xml.rels"] = b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships" />'
+    entries["xl/media/image1.png"] = b"template-image"
+    entries["xl/worksheets/_rels/sheet1.xml.rels"] = b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml" /></Relationships>'
+    entries["xl/worksheets/sheet1.xml"] = entries["xl/worksheets/sheet1.xml"].replace(
+        b"</worksheet>", b'<drawing xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1" /></worksheet>'
+    )
+    with ZipFile(template, "w") as archive:
+        for name, content in entries.items():
+            archive.writestr(name, content)
+
+    output = write_application(template, tmp_path / "generated", ApplicationData(unit="Model X"))
+
+    with ZipFile(output) as archive:
+        names = set(archive.namelist())
+        assert "xl/drawings/drawing1.xml" in names
+        assert "xl/media/image1.png" in names
+        assert "xl/worksheets/_rels/sheet1.xml.rels" in names
+        assert b"drawing1.xml" in archive.read("xl/worksheets/_rels/sheet1.xml.rels")
+        assert b"r:id=\"rId1\"" in archive.read("xl/worksheets/sheet1.xml")
 
 
 def test_writer_writes_to_top_left_cell_of_merged_destination(tmp_path):
