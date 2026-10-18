@@ -1,5 +1,5 @@
-
 <!-- CODEGRAPH_START -->
+
 ## CodeGraph
 
 In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
@@ -8,8 +8,24 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 - **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+
 <!-- CODEGRAPH_END -->
 
+<!-- graphify-rules-start (managed by `graphify init`) -->
+
+## Use Graphify before grep
+
+This repository is indexed by Graphify: a code graph over its call, dependency, and test structure, exposed through a connected Graphify MCP server. Before reaching for grep or reading files, use the Graphify tools your MCP client lists (their exact names and descriptions are in the server's tool list) for what the graph knows and a text search does not:
+
+- find where a symbol, function, or class is defined (instead of grepping for it)
+- understand how something works, or where a behavior is handled
+- find who calls a function, or what it calls
+- see what a change affects (its blast radius) and which tests cover it
+- map a file's dependencies and dependents
+
+Fall back to grep or file reads only for what the graph does not model: literal string or comment matches, non-indexed files, or reading a file you have already located. If no Graphify tools are listed, check the MCP server connection.
+
+<!-- graphify-rules-end -->
 
 <! -- Ponytail instructions start -->
 
