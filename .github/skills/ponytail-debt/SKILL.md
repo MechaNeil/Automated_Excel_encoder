@@ -1,11 +1,8 @@
 ---
 name: ponytail-debt
-description: >
-  List every `shortcut:` comment (and older `ponytail:` ones) as a debt ledger. One-shot report,
-  changes nothing. Use for "ponytail debt", "what did ponytail defer", "list the
-  shortcuts", /ponytail-debt.
+description: "List every `shortcut:` comment (and older `ponytail:` ones) as a debt ledger. One-shot report, changes nothing. Use for \"ponytail debt\", \"what did ponytail defer\", \"list the shortcuts\", /ponytail-debt."
+disable-model-invocation: true
 ---
-
 Every deliberate ponytail shortcut is marked with a `shortcut:` comment naming
 its ceiling and upgrade path (older code may say `ponytail:`). This collects them into one ledger so a deferral
 can't quietly become permanent.
